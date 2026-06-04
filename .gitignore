@@ -1,0 +1,8 @@
+bin/
+obj/
+publish-single/
+*.user
+*.suo
+*.cache
+*.log
+MainWindow.edited.xaml.cs
