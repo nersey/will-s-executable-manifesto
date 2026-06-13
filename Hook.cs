@@ -180,8 +180,12 @@ internal sealed class X64CodeBuilder
 
     public void PushRbx() => Emit(0x53);
     public void PopRbx() => Emit(0x5B);
+    public void PushRax() => Emit(0x50);
+    public void PopRax() => Emit(0x58);
     public void PushR10() => Emit(0x41, 0x52);
     public void PopR10() => Emit(0x41, 0x5A);
+    public void PushFlags() => Emit(0x9C);
+    public void PopFlags() => Emit(0x9D);
 
     public void MovR10Imm64(nint value)
     {
@@ -209,6 +213,43 @@ internal sealed class X64CodeBuilder
         Emit(0x41, 0x8B, 0x5A, displacement);
     }
 
+    public void MovRbxPtrR10Disp8(byte displacement)
+    {
+        Emit(0x49, 0x8B, 0x5A, displacement);
+    }
+
+    public void CmpRbxR15()
+    {
+        Emit(0x4C, 0x39, 0xFB);
+    }
+
+    public void TestRbxRbx()
+    {
+        Emit(0x48, 0x85, 0xDB);
+    }
+
+    public void MovAlPtrR10Disp8(byte displacement)
+    {
+        Emit(0x41, 0x8A, 0x42, displacement);
+    }
+
+    public void MovPtrR10Disp8Al(byte displacement)
+    {
+        Emit(0x41, 0x88, 0x42, displacement);
+    }
+
+    public void MovAlPtrR15Disp32(int displacement)
+    {
+        Emit(0x41, 0x8A, 0x87);
+        EmitInt32(displacement);
+    }
+
+    public void MovPtrRbxDisp32Al(int displacement)
+    {
+        Emit(0x88, 0x83);
+        EmitInt32(displacement);
+    }
+
     public void MovPtrR15Disp32Ebx(int displacement)
     {
         Emit(0x41, 0x89, 0x9F);
@@ -231,6 +272,13 @@ internal sealed class X64CodeBuilder
     public void MovBytePtrR15Disp32Imm8(int displacement, byte value)
     {
         Emit(0x41, 0xC6, 0x87);
+        EmitInt32(displacement);
+        Emit(value);
+    }
+
+    public void MovBytePtrRsiDisp32Imm8(int displacement, byte value)
+    {
+        Emit(0xC6, 0x86);
         EmitInt32(displacement);
         Emit(value);
     }

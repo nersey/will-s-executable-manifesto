@@ -19,6 +19,8 @@ internal sealed class TrainerBackend : IDisposable
     private const int DataEnableNoSpread = 2;
     private const int DataEnableNoRecoil = 3;
     private const int DataEnableSpeed = 4;
+    private const int DataEnableFullAuto = 5;
+    private const int DataEnableFlyMode = 6;
     private const int DataFireDelay = 8;
     private const int DataSpeedMultiplier = 12;
     private const int DataWalkSpeed = 16;
@@ -28,7 +30,9 @@ internal sealed class TrainerBackend : IDisposable
     private const int DataSprintAirSpeed = 32;
     private const int DataLastWeaponBase = 40;
     private const int DataLastControllerBase = 48;
-    private const int DataBlockSize = 64;
+    private const int DataFullAutoWeaponBase = 56;
+    private const int DataFullAutoOriginalValue = 64;
+    private const int DataBlockSize = 80;
 
     private readonly ProcessMemory _memory = new();
     private readonly object _gate = new();
@@ -183,6 +187,7 @@ internal sealed class TrainerBackend : IDisposable
 
         _weaponHook?.Disable();
         _weaponHook = null;
+        RestoreFullAutoWeapon();
 
         if (freeDataBlock && _dataBlock != 0 && _memory.IsAttached)
         {
@@ -196,11 +201,6 @@ internal sealed class TrainerBackend : IDisposable
         return _memory.Write(address, BitConverter.GetBytes(value));
     }
 
-    private bool WriteByte(nint address, bool value)
-    {
-        return _memory.Write(address, [value ? (byte)1 : (byte)0]);
-    }
-
     private bool WriteSettings()
     {
         if (!_memory.IsAttached || _dataBlock == 0)
@@ -208,28 +208,129 @@ internal sealed class TrainerBackend : IDisposable
             return false;
         }
 
-        return WriteByte(_dataBlock + DataEnableInfAmmo, _settings.EnableInfAmmo) &&
-               WriteByte(_dataBlock + DataEnableFastFire, _settings.EnableFastFire) &&
-               WriteByte(_dataBlock + DataEnableNoSpread, _settings.EnableNoSpread) &&
-               WriteByte(_dataBlock + DataEnableNoRecoil, _settings.EnableNoRecoil) &&
-               WriteByte(_dataBlock + DataEnableSpeed, _settings.EnableSpeed) &&
-               WriteFloat(_dataBlock + DataFireDelay, _settings.FireDelay) &&
-               WriteFloat(_dataBlock + DataSpeedMultiplier, _settings.SpeedMultiplier) &&
-               WriteFloat(_dataBlock + DataWalkSpeed, 5.5f * _settings.SpeedMultiplier) &&
-               WriteFloat(_dataBlock + DataSprintSpeed, 8.5f * _settings.SpeedMultiplier) &&
-               WriteFloat(_dataBlock + DataCrouchSpeed, 4.0f * _settings.SpeedMultiplier) &&
-               WriteFloat(_dataBlock + DataAirSpeed, 6.0f * _settings.SpeedMultiplier) &&
-               WriteFloat(_dataBlock + DataSprintAirSpeed, 9.0f * _settings.SpeedMultiplier);
+        if (!WriteFloat(_dataBlock + DataFireDelay, _settings.FireDelay) ||
+            !WriteFloat(_dataBlock + DataSpeedMultiplier, _settings.SpeedMultiplier) ||
+            !WriteFloat(_dataBlock + DataWalkSpeed, 5.5f * _settings.SpeedMultiplier) ||
+            !WriteFloat(_dataBlock + DataSprintSpeed, 8.5f * _settings.SpeedMultiplier) ||
+            !WriteFloat(_dataBlock + DataCrouchSpeed, 4.0f * _settings.SpeedMultiplier) ||
+            !WriteFloat(_dataBlock + DataAirSpeed, 6.0f * _settings.SpeedMultiplier) ||
+            !WriteFloat(_dataBlock + DataSprintAirSpeed, 9.0f * _settings.SpeedMultiplier))
+        {
+            return false;
+        }
+
+        var flagsWritten = _memory.Write(
+            _dataBlock,
+            [
+                _settings.EnableInfAmmo ? (byte)1 : (byte)0,
+                _settings.EnableFastFire ? (byte)1 : (byte)0,
+                _settings.EnableNoSpread ? (byte)1 : (byte)0,
+                _settings.EnableNoRecoil ? (byte)1 : (byte)0,
+                _settings.EnableSpeed ? (byte)1 : (byte)0,
+                _settings.EnableFullAuto ? (byte)1 : (byte)0,
+                _settings.EnableFlyMode ? (byte)1 : (byte)0
+            ]);
+
+        if (flagsWritten && _settings.EnableInfAmmo)
+        {
+            ApplyInfiniteAmmoToLastWeapon();
+        }
+
+        if (flagsWritten && !_settings.EnableFullAuto)
+        {
+            RestoreFullAutoWeapon();
+        }
+
+        return flagsWritten;
+    }
+
+    private void RestoreFullAutoWeapon()
+    {
+        if (!_memory.IsAttached || _dataBlock == 0)
+        {
+            return;
+        }
+
+        var pointerBytes = new byte[sizeof(long)];
+        var originalValue = new byte[1];
+        if (!_memory.TryRead(
+                _dataBlock + DataFullAutoWeaponBase,
+                pointerBytes,
+                out var pointerBytesRead) ||
+            pointerBytesRead != pointerBytes.Length ||
+            !_memory.TryRead(
+                _dataBlock + DataFullAutoOriginalValue,
+                originalValue,
+                out var originalBytesRead) ||
+            originalBytesRead != originalValue.Length)
+        {
+            return;
+        }
+
+        var weaponBase = new nint(BitConverter.ToInt64(pointerBytes));
+        if (weaponBase != 0)
+        {
+            _memory.Write(weaponBase + 0x2F2, originalValue);
+        }
+
+        _memory.Write(
+            _dataBlock + DataFullAutoWeaponBase,
+            new byte[sizeof(long)]);
+        _memory.Write(
+            _dataBlock + DataFullAutoOriginalValue,
+            [0]);
+    }
+
+    private void ApplyInfiniteAmmoToLastWeapon()
+    {
+        var pointerBytes = new byte[sizeof(long)];
+        if (!_memory.TryRead(
+                _dataBlock + DataLastWeaponBase,
+                pointerBytes,
+                out var bytesRead) ||
+            bytesRead != pointerBytes.Length)
+        {
+            return;
+        }
+
+        var weaponBase = new nint(BitConverter.ToInt64(pointerBytes));
+        if (weaponBase == 0)
+        {
+            return;
+        }
+
+        _memory.Write(weaponBase + 0x2A8, BitConverter.GetBytes(999));
+        _memory.Write(weaponBase + 0x398, BitConverter.GetBytes(999));
+        _memory.Write(weaponBase + 0x3A0, BitConverter.GetBytes(999.0f));
     }
 
     private byte[] BuildWeaponHook(nint caveAddress, nint returnAddress)
     {
         var code = new X64CodeBuilder(caveAddress);
 
+        code.PushFlags();
+        code.PushRax();
         code.PushRbx();
         code.PushR10();
         code.MovR10Imm64(_dataBlock);
         code.MovPtrR10Disp8R15(DataLastWeaponBase);
+
+        code.CmpBytePtrR10Disp8(DataEnableFullAuto, 0);
+        code.Je("afterFullAuto");
+        code.MovRbxPtrR10Disp8(DataFullAutoWeaponBase);
+        code.CmpRbxR15();
+        code.Je("forceFullAuto");
+        code.TestRbxRbx();
+        code.Je("captureFullAutoWeapon");
+        code.MovAlPtrR10Disp8(DataFullAutoOriginalValue);
+        code.MovPtrRbxDisp32Al(0x2F2);
+        code.Label("captureFullAutoWeapon");
+        code.MovPtrR10Disp8R15(DataFullAutoWeaponBase);
+        code.MovAlPtrR15Disp32(0x2F2);
+        code.MovPtrR10Disp8Al(DataFullAutoOriginalValue);
+        code.Label("forceFullAuto");
+        code.MovBytePtrR15Disp32Imm8(0x2F2, 0);
+        code.Label("afterFullAuto");
 
         code.CmpBytePtrR10Disp8(DataEnableFastFire, 0);
         code.Je("afterFastFire");
@@ -255,12 +356,19 @@ internal sealed class TrainerBackend : IDisposable
         code.Label("afterNoRecoil");
 
         code.CmpBytePtrR10Disp8(DataEnableInfAmmo, 0);
-        code.Jne("skipAmmoWrite");
+        code.Je("originalAmmoWrite");
+        code.MovDwordPtrR15Disp32Imm32(0x2A8, 0x000003E7);
+        code.MovDwordPtrR15Disp32Imm32(0x398, 0x000003E7);
+        code.MovDwordPtrR15Disp32Imm32(0x3A0, 0x4479C000);
+        code.Jmp("afterAmmoWrite");
+        code.Label("originalAmmoWrite");
         code.MovPtrR15Disp32Eax(0x2A8);
-        code.Label("skipAmmoWrite");
+        code.Label("afterAmmoWrite");
 
         code.PopR10();
         code.PopRbx();
+        code.PopRax();
+        code.PopFlags();
         code.JmpAbsolute(returnAddress);
 
         return code.ToArray();
@@ -270,11 +378,20 @@ internal sealed class TrainerBackend : IDisposable
     {
         var code = new X64CodeBuilder(caveAddress);
 
+        code.PushFlags();
         code.PushRbx();
         code.PushR10();
         code.MovRaxPtrRsiDisp32(0x2B8);
         code.MovR10Imm64(_dataBlock);
         code.MovPtrR10Disp8Rsi(DataLastControllerBase);
+
+        code.CmpBytePtrR10Disp8(DataEnableFlyMode, 0);
+        code.Je("flyOff");
+        code.MovBytePtrRsiDisp32Imm8(0x664, 1);
+        code.Jmp("afterFly");
+        code.Label("flyOff");
+        code.MovBytePtrRsiDisp32Imm8(0x664, 0);
+        code.Label("afterFly");
 
         code.CmpBytePtrR10Disp8(DataEnableSpeed, 0);
         code.Je("restoreDefaults");
@@ -301,6 +418,7 @@ internal sealed class TrainerBackend : IDisposable
         code.Label("doneSpeed");
         code.PopR10();
         code.PopRbx();
+        code.PopFlags();
         code.JmpAbsolute(returnAddress);
 
         return code.ToArray();
@@ -331,18 +449,22 @@ internal sealed class TrainerBackend : IDisposable
 internal readonly record struct TrainerSettings(
     bool EnableInfAmmo,
     bool EnableFastFire,
+    bool EnableFullAuto,
     bool EnableNoSpread,
     bool EnableNoRecoil,
     bool EnableSpeed,
+    bool EnableFlyMode,
     float FireDelay,
     float SpeedMultiplier)
 {
     public static TrainerSettings Default => new(
         EnableInfAmmo: false,
         EnableFastFire: false,
+        EnableFullAuto: false,
         EnableNoSpread: false,
         EnableNoRecoil: false,
         EnableSpeed: false,
-        FireDelay: 0.01f,
+        EnableFlyMode: false,
+        FireDelay: 0.20f,
         SpeedMultiplier: 4.0f);
 }

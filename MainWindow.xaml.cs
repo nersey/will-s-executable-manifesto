@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
-using System.Threading;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Interop;
@@ -18,11 +17,13 @@ public partial class MainWindow : Window
     private readonly TrainerBackend _backend = new();
     private readonly DispatcherTimer _rgbTimer;
     private readonly DispatcherTimer _bannerTimer;
+    private readonly DispatcherTimer _finalsTimer;
     private readonly List<BitmapSource> _bannerFrames = [];
+    private readonly List<BitmapSource> _finalsFrames = [];
     private string _lastBackendStatus = "Not attached";
-    private int _settingsRevision;
     private double _rgbHue;
     private int _bannerFrameIndex;
+    private int _finalsFrameIndex;
 
     public MainWindow()
     {
@@ -45,7 +46,14 @@ public partial class MainWindow : Window
         };
         _bannerTimer.Tick += (_, _) => AdvanceBannerFrame();
 
+        _finalsTimer = new DispatcherTimer
+        {
+            Interval = TimeSpan.FromMilliseconds(70)
+        };
+        _finalsTimer.Tick += (_, _) => AdvanceFinalsFrame();
+
         Loaded += (_, _) => LoadLootbetBanner();
+        Loaded += (_, _) => LoadFinalsBanner();
     }
 
     private void Window_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
@@ -83,8 +91,8 @@ public partial class MainWindow : Window
         ControlsPanel.Visibility = Visibility.Visible;
         GlassSurface.Background = (Brush)FindResource("PurpleGlassFill");
         _rgbTimer.Start();
-        Height = 700;
-        MinHeight = 700;
+        Height = 780;
+        MinHeight = 780;
         SpeedHackCheckBox.IsEnabled = true;
     }
 
@@ -98,8 +106,8 @@ public partial class MainWindow : Window
         RgbStopA.Color = Color.FromRgb(0x90, 0x90, 0x90);
         RgbStopB.Color = Color.FromRgb(0x6F, 0x6F, 0x76);
         RgbStopC.Color = Color.FromRgb(0x90, 0x90, 0x90);
-        Height = 680;
-        MinHeight = 540;
+        Height = 780;
+        MinHeight = 700;
     }
 
     private void CopyDonate_Click(object sender, RoutedEventArgs e)
@@ -158,14 +166,7 @@ public partial class MainWindow : Window
         }
 
         var settings = GetCurrentSettings();
-        var revision = Interlocked.Increment(ref _settingsRevision);
-        _ = System.Threading.Tasks.Task.Run(() =>
-        {
-            if (revision == Volatile.Read(ref _settingsRevision))
-            {
-                _backend.UpdateSettings(settings);
-            }
-        });
+        _backend.UpdateSettings(settings);
     }
 
     private TrainerSettings GetCurrentSettings()
@@ -173,16 +174,19 @@ public partial class MainWindow : Window
         return new TrainerSettings(
             EnableInfAmmo: InfiniteAmmoCheckBox?.IsChecked == true,
             EnableFastFire: FastFireCheckBox?.IsChecked == true,
+            EnableFullAuto: FullAutoCheckBox?.IsChecked == true,
             EnableNoSpread: NoSpreadCheckBox?.IsChecked == true,
             EnableNoRecoil: NoRecoilCheckBox?.IsChecked == true,
             EnableSpeed: SpeedHackCheckBox?.IsChecked == true,
+            EnableFlyMode: FlyModeCheckBox?.IsChecked == true,
             FireDelay: (float)GetFireDelay(),
             SpeedMultiplier: (float)(SpeedSlider?.Value ?? 4.0));
     }
 
     private double GetFireDelay()
     {
-        return Math.Clamp(0.001 + ((FireDelaySlider?.Value ?? 900.0) / 100000.0), 0.001, 0.20);
+        var sliderValue = FireDelaySlider?.Value ?? 900.0;
+        return Math.Clamp(0.001 + ((sliderValue / 900.0) * 0.199), 0.001, 0.20);
     }
 
     private void SetStatus(string status)
@@ -235,6 +239,37 @@ public partial class MainWindow : Window
         if (_bannerFrames.Count > 1)
         {
             _bannerTimer.Start();
+        }
+    }
+
+    private void LoadFinalsBanner()
+    {
+        var resourceInfo = Application.GetResourceStream(
+            new Uri("the-finals.gif", UriKind.Relative));
+        if (resourceInfo == null)
+        {
+            return;
+        }
+
+        var decoder = new GifBitmapDecoder(
+            resourceInfo.Stream,
+            BitmapCreateOptions.PreservePixelFormat,
+            BitmapCacheOption.OnLoad);
+
+        _finalsFrames.Clear();
+        ComposeGifFrames(decoder, _finalsFrames);
+
+        if (_finalsFrames.Count == 0)
+        {
+            return;
+        }
+
+        _finalsFrameIndex = 0;
+        FinalsBannerImage.Source = _finalsFrames[0];
+
+        if (_finalsFrames.Count > 1)
+        {
+            _finalsTimer.Start();
         }
     }
 
@@ -319,6 +354,17 @@ public partial class MainWindow : Window
 
         _bannerFrameIndex = (_bannerFrameIndex + 1) % _bannerFrames.Count;
         LootbetBannerImage.Source = _bannerFrames[_bannerFrameIndex];
+    }
+
+    private void AdvanceFinalsFrame()
+    {
+        if (_finalsFrames.Count == 0)
+        {
+            return;
+        }
+
+        _finalsFrameIndex = (_finalsFrameIndex + 1) % _finalsFrames.Count;
+        FinalsBannerImage.Source = _finalsFrames[_finalsFrameIndex];
     }
 
     private static Color FromHsv(double hue, double saturation, double value)

@@ -3,9 +3,9 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title=""
         Width="460"
-        Height="680"
+        Height="780"
         MinWidth="460"
-        MinHeight="540"
+        MinHeight="700"
         WindowStartupLocation="CenterScreen"
         WindowStyle="None"
         AllowsTransparency="True"
@@ -22,9 +22,9 @@
         </LinearGradientBrush>
 
         <LinearGradientBrush x:Key="PurpleGlassFill" StartPoint="0,0" EndPoint="1,1">
-            <GradientStop Color="#407E33B5" Offset="0" />
-            <GradientStop Color="#3A621A8F" Offset="0.48" />
-            <GradientStop Color="#4443105F" Offset="1" />
+            <GradientStop Color="#5069C9F4" Offset="0" />
+            <GradientStop Color="#4651ADD9" Offset="0.48" />
+            <GradientStop Color="#504784C4" Offset="1" />
         </LinearGradientBrush>
 
         <Style x:Key="GlassText" TargetType="{x:Type TextBlock}">
@@ -184,7 +184,7 @@
                     <Grid x:Name="SplashPanel"
                           Grid.Row="1"
                           VerticalAlignment="Top"
-                          Height="430">
+                          Height="515">
                         <Border Width="330"
                                 Height="185"
                                 HorizontalAlignment="Center"
@@ -209,12 +209,31 @@
                                 Style="{StaticResource GlassButton}"
                                 Click="Ok_Click" />
                         <Image Source="arek.png"
-                               Height="185"
+                               Height="170"
                                HorizontalAlignment="Center"
                                VerticalAlignment="Top"
                                Stretch="Uniform"
                                SnapsToDevicePixels="True"
-                               Margin="0,230,0,0" />
+                               Margin="0,220,0,0" />
+                        <Grid Height="105"
+                              Margin="0,400,0,0"
+                              VerticalAlignment="Top">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="8" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <Image x:Name="FinalsBannerImage"
+                                   Grid.Column="0"
+                                   Height="105"
+                                   Stretch="Uniform"
+                                   SnapsToDevicePixels="True" />
+                            <Image Source="what-is.png"
+                                   Grid.Column="2"
+                                   Height="105"
+                                   Stretch="Uniform"
+                                   SnapsToDevicePixels="True" />
+                        </Grid>
                     </Grid>
 
                     <StackPanel x:Name="ControlsPanel"
@@ -243,6 +262,11 @@
                                   Style="{StaticResource ColorCheckBox}"
                                   Checked="OptionChanged"
                                   Unchecked="OptionChanged" />
+                        <CheckBox x:Name="FullAutoCheckBox"
+                                  Content="Full Auto (reload to apply changes)"
+                                  Style="{StaticResource ColorCheckBox}"
+                                  Checked="OptionChanged"
+                                  Unchecked="OptionChanged" />
                         <CheckBox x:Name="NoSpreadCheckBox"
                                   Content="No Spread"
                                   Style="{StaticResource ColorCheckBox}"
@@ -255,6 +279,11 @@
                                   Unchecked="OptionChanged" />
                         <CheckBox x:Name="SpeedHackCheckBox"
                                   Content="Speed Hack"
+                                  Style="{StaticResource ColorCheckBox}"
+                                  Checked="OptionChanged"
+                                  Unchecked="OptionChanged" />
+                        <CheckBox x:Name="FlyModeCheckBox"
+                                  Content="Fly Mode"
                                   Style="{StaticResource ColorCheckBox}"
                                   Checked="OptionChanged"
                                   Unchecked="OptionChanged" />
@@ -287,7 +316,7 @@
                         <Grid Margin="0,28,0,4">
                             <TextBlock Text="Fire Rate delay" Style="{StaticResource GlassText}" />
                             <TextBlock x:Name="FireDelayText"
-                                       Text="0.01000s"
+                                       Text="0.20000s"
                                        Style="{StaticResource GlassText}"
                                        HorizontalAlignment="Right" />
                         </Grid>
@@ -351,7 +380,7 @@
                             </Border>
                         </Grid>
 
-                        <TextBlock Text="made by Damian-Lara Esquivel Ignacio"
+                        <TextBlock Text="Ver.1.1"
                                    Foreground="#FFFFF371"
                                    FontFamily="Segoe Script, Brush Script MT, Segoe Print"
                                    FontSize="14"
