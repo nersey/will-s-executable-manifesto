@@ -1,0 +1,402 @@
+<Window x:Class="STRAFTATWpfTrainer.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title=""
+        Width="460"
+        Height="780"
+        MinWidth="460"
+        MinHeight="700"
+        WindowStartupLocation="CenterScreen"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        Background="Transparent"
+        ResizeMode="NoResize"
+        MouseLeftButtonDown="Window_MouseLeftButtonDown">
+    <Window.Resources>
+        <FontFamily x:Key="WarmFont">Super Warming, Segoe Print, Comic Sans MS, Segoe UI</FontFamily>
+
+        <LinearGradientBrush x:Key="GreyGlassFill" StartPoint="0,0" EndPoint="1,1">
+            <GradientStop Color="#66777777" Offset="0" />
+            <GradientStop Color="#55515158" Offset="0.48" />
+            <GradientStop Color="#60303036" Offset="1" />
+        </LinearGradientBrush>
+
+        <LinearGradientBrush x:Key="PurpleGlassFill" StartPoint="0,0" EndPoint="1,1">
+            <GradientStop Color="#5069C9F4" Offset="0" />
+            <GradientStop Color="#4651ADD9" Offset="0.48" />
+            <GradientStop Color="#504784C4" Offset="1" />
+        </LinearGradientBrush>
+
+        <Style x:Key="GlassText" TargetType="{x:Type TextBlock}">
+            <Setter Property="FontFamily" Value="{StaticResource WarmFont}" />
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="FontSize" Value="14" />
+        </Style>
+
+        <Style x:Key="GlassButton" TargetType="{x:Type Button}">
+            <Setter Property="FontFamily" Value="{StaticResource WarmFont}" />
+            <Setter Property="Foreground" Value="#32133F" />
+            <Setter Property="FontSize" Value="15" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Padding" Value="14,6" />
+            <Setter Property="Background" Value="#FFF8E9FF" />
+            <Setter Property="BorderBrush" Value="#FFFFFFFF" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type Button}">
+                        <Border Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="9">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center" />
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="ColorCheckBox" TargetType="{x:Type CheckBox}">
+            <Setter Property="FontFamily" Value="{StaticResource WarmFont}" />
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Margin" Value="0,7" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type CheckBox}">
+                        <StackPanel Orientation="Horizontal">
+                            <Border x:Name="Box"
+                                    Width="18"
+                                    Height="18"
+                                    CornerRadius="5"
+                                    BorderThickness="1"
+                                    BorderBrush="#E8FFFFFF"
+                                    Background="#FF171A24" />
+                            <ContentPresenter Margin="9,0,0,0"
+                                              VerticalAlignment="Center" />
+                        </StackPanel>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="Box" Property="Background" Value="#FF00D7FF" />
+                                <Setter TargetName="Box" Property="BorderBrush" Value="#FFFFF371" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="NeonSlider" TargetType="{x:Type Slider}">
+            <Setter Property="Height" Value="28" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type Slider}">
+                        <Grid>
+                            <Border Height="8"
+                                    VerticalAlignment="Center"
+                                    CornerRadius="4"
+                                    Background="#E51A1724" />
+                            <Track x:Name="PART_Track">
+                                <Track.DecreaseRepeatButton>
+                                    <RepeatButton Command="Slider.DecreaseLarge"
+                                                  Background="#FF00D7FF"
+                                                  BorderThickness="0"
+                                                  Height="8"
+                                                  VerticalAlignment="Center"
+                                                  Opacity="0.95" />
+                                </Track.DecreaseRepeatButton>
+                                <Track.Thumb>
+                                    <Thumb Width="16"
+                                           Height="28"
+                                           Background="#FFFF70D7"
+                                           BorderBrush="#FFFFFF"
+                                           BorderThickness="1" />
+                                </Track.Thumb>
+                                <Track.IncreaseRepeatButton>
+                                    <RepeatButton Command="Slider.IncreaseLarge"
+                                                  Background="Transparent"
+                                                  BorderThickness="0" />
+                                </Track.IncreaseRepeatButton>
+                            </Track>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+
+    <Grid>
+        <Border x:Name="RgbBorder"
+                CornerRadius="24"
+                BorderThickness="5"
+                Background="Transparent"
+                Padding="0">
+            <Border.BorderBrush>
+                <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                    <GradientStop x:Name="RgbStopA" Color="#FF909090" Offset="0" />
+                    <GradientStop x:Name="RgbStopB" Color="#FF6F6F76" Offset="0.5" />
+                    <GradientStop x:Name="RgbStopC" Color="#FF909090" Offset="1" />
+                </LinearGradientBrush>
+            </Border.BorderBrush>
+
+            <Border x:Name="GlassSurface"
+                    CornerRadius="21"
+                    Background="{StaticResource GreyGlassFill}"
+                    BorderBrush="#80FFFFFF"
+                    BorderThickness="1"
+                    Padding="18">
+                <Grid ClipToBounds="True">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+
+                    <Grid.Effect>
+                        <BlurEffect Radius="0.4" />
+                    </Grid.Effect>
+
+                    <Canvas Grid.RowSpan="3"
+                            IsHitTestVisible="False"
+                            Opacity="0.12">
+                        <Ellipse Width="280" Height="150" Canvas.Left="-80" Canvas.Top="20" Fill="#30FFFFFF" />
+                        <Ellipse Width="210" Height="120" Canvas.Left="230" Canvas.Top="90" Fill="#247B33B5" />
+                        <Path Fill="#26FFFFFF"
+                              Data="M 0,95 C 120,42 250,60 430,18 L 430,66 C 280,96 128,124 0,156 Z" />
+                        <Path Fill="#2843105F"
+                              Data="M 25,440 C 140,395 278,430 430,382 L 430,475 C 298,528 126,492 25,548 Z" />
+                    </Canvas>
+
+                    <Grid Grid.Row="0"
+                          Height="30"
+                          Margin="0,0,0,12">
+                        <Button x:Name="SixteenPlayerLobbyButton"
+                                Content="enable 16 player lobbies"
+                                Width="190"
+                                Height="26"
+                                HorizontalAlignment="Left"
+                                Style="{StaticResource GlassButton}"
+                                Click="SixteenPlayerLobby_Click" />
+                        <Button Content="x"
+                                Width="30"
+                                Height="26"
+                                HorizontalAlignment="Right"
+                                Style="{StaticResource GlassButton}"
+                                Click="Close_Click" />
+                    </Grid>
+
+                    <Grid x:Name="SplashPanel"
+                          Grid.Row="1"
+                          VerticalAlignment="Top"
+                          Height="515">
+                        <Border Width="330"
+                                Height="185"
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Top"
+                                Margin="0,28,0,0"
+                                CornerRadius="22"
+                                BorderBrush="#BBFFFFFF"
+                                BorderThickness="1"
+                                SnapsToDevicePixels="True">
+                            <Border.Background>
+                                <ImageBrush ImageSource="cheesy bread.jpg"
+                                            Stretch="UniformToFill" />
+                            </Border.Background>
+                        </Border>
+                        <Button x:Name="OkButton"
+                                Content="ok"
+                                Width="72"
+                                Height="34"
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Top"
+                                Margin="0,24,0,0"
+                                Style="{StaticResource GlassButton}"
+                                Click="Ok_Click" />
+                        <Image Source="arek.png"
+                               Height="170"
+                               HorizontalAlignment="Center"
+                               VerticalAlignment="Top"
+                               Stretch="Uniform"
+                               SnapsToDevicePixels="True"
+                               Margin="0,220,0,0" />
+                        <Grid Height="105"
+                              Margin="0,400,0,0"
+                              VerticalAlignment="Top">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="8" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <Image x:Name="FinalsBannerImage"
+                                   Grid.Column="0"
+                                   Height="105"
+                                   Stretch="Uniform"
+                                   SnapsToDevicePixels="True" />
+                            <Image Source="what-is.png"
+                                   Grid.Column="2"
+                                   Height="105"
+                                   Stretch="Uniform"
+                                   SnapsToDevicePixels="True" />
+                        </Grid>
+                    </Grid>
+
+                    <StackPanel x:Name="ControlsPanel"
+                                Grid.Row="1"
+                                Visibility="Collapsed"
+                                Margin="2,6,2,0">
+                        <Grid Margin="0,0,0,22">
+                            <TextBlock x:Name="StatusText"
+                                       Text="Not attached"
+                                       Style="{StaticResource GlassText}" />
+                            <Button Content="Disable"
+                                    HorizontalAlignment="Right"
+                                    Width="128"
+                                    Height="32"
+                                    Style="{StaticResource GlassButton}"
+                                    Click="Disable_Click" />
+                        </Grid>
+
+                        <CheckBox x:Name="InfiniteAmmoCheckBox"
+                                  Content="Infinite Ammo"
+                                  Style="{StaticResource ColorCheckBox}"
+                                  Checked="OptionChanged"
+                                  Unchecked="OptionChanged" />
+                        <CheckBox x:Name="FastFireCheckBox"
+                                  Content="Fast Fire"
+                                  Style="{StaticResource ColorCheckBox}"
+                                  Checked="OptionChanged"
+                                  Unchecked="OptionChanged" />
+                        <CheckBox x:Name="FullAutoCheckBox"
+                                  Content="Full Auto (reload to apply changes)"
+                                  Style="{StaticResource ColorCheckBox}"
+                                  Checked="OptionChanged"
+                                  Unchecked="OptionChanged" />
+                        <CheckBox x:Name="NoSpreadCheckBox"
+                                  Content="No Spread"
+                                  Style="{StaticResource ColorCheckBox}"
+                                  Checked="OptionChanged"
+                                  Unchecked="OptionChanged" />
+                        <CheckBox x:Name="NoRecoilCheckBox"
+                                  Content="No Recoil / No Camera Shake"
+                                  Style="{StaticResource ColorCheckBox}"
+                                  Checked="OptionChanged"
+                                  Unchecked="OptionChanged" />
+                        <CheckBox x:Name="SpeedHackCheckBox"
+                                  Content="Speed Hack"
+                                  Style="{StaticResource ColorCheckBox}"
+                                  Checked="OptionChanged"
+                                  Unchecked="OptionChanged" />
+                        <CheckBox x:Name="FlyModeCheckBox"
+                                  Content="Fly Mode"
+                                  Style="{StaticResource ColorCheckBox}"
+                                  Checked="OptionChanged"
+                                  Unchecked="OptionChanged" />
+                        <CheckBox x:Name="GodModeCheckBox"
+                                  Style="{StaticResource ColorCheckBox}"
+                                  Click="GodMode_Click">
+                            <TextBlock x:Name="GodModeText"
+                                       Text="godmode"
+                                       FontFamily="{StaticResource WarmFont}"
+                                       FontSize="14"
+                                       FontWeight="SemiBold" />
+                        </CheckBox>
+
+                        <Grid Margin="0,28,0,4">
+                            <TextBlock Text="Movement Speed multiplier" Style="{StaticResource GlassText}" />
+                            <TextBlock x:Name="SpeedValueText"
+                                       Text="4.0x"
+                                       Style="{StaticResource GlassText}"
+                                       HorizontalAlignment="Right" />
+                        </Grid>
+                        <Slider x:Name="SpeedSlider"
+                                Style="{StaticResource NeonSlider}"
+                                Minimum="1"
+                                Maximum="10"
+                                Value="4"
+                                TickFrequency="0.1"
+                                IsSnapToTickEnabled="True"
+                                ValueChanged="SpeedSlider_ValueChanged" />
+
+                        <Grid Margin="0,28,0,4">
+                            <TextBlock Text="Fire Rate delay" Style="{StaticResource GlassText}" />
+                            <TextBlock x:Name="FireDelayText"
+                                       Text="0.20000s"
+                                       Style="{StaticResource GlassText}"
+                                       HorizontalAlignment="Right" />
+                        </Grid>
+                        <Slider x:Name="FireDelaySlider"
+                                Style="{StaticResource NeonSlider}"
+                                Minimum="0"
+                                Maximum="900"
+                                Value="900"
+                                ValueChanged="FireDelaySlider_ValueChanged" />
+                    </StackPanel>
+
+                    <StackPanel Grid.Row="2"
+                                Margin="0,12,0,0">
+                        <Grid Height="82">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="112" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+
+                            <StackPanel Grid.Column="0"
+                                        VerticalAlignment="Center"
+                                        Margin="0,0,10,0">
+                                <TextBlock Text="DONATE ---&gt;"
+                                           Foreground="#FFFFF371"
+                                           FontFamily="{StaticResource WarmFont}"
+                                           FontSize="13"
+                                           FontWeight="SemiBold" />
+                                <TextBlock Text="3BwF9vvbhrQSecmYvzHaGVtMbH4R3r4K3n"
+                                           Foreground="White"
+                                           FontFamily="Consolas"
+                                           FontSize="7.5"
+                                           TextWrapping="Wrap"
+                                           Margin="0,1,0,4" />
+                                <Button Content="copy"
+                                        Width="48"
+                                        Height="20"
+                                        FontSize="11"
+                                        HorizontalAlignment="Left"
+                                        Style="{StaticResource GlassButton}"
+                                        Click="CopyDonate_Click" />
+                            </StackPanel>
+
+                            <Border Grid.Column="1"
+                                    CornerRadius="8"
+                                    Background="Transparent"
+                                    ClipToBounds="True">
+                                <StackPanel Orientation="Horizontal"
+                                            HorizontalAlignment="Left"
+                                            VerticalAlignment="Center">
+                                    <Image Source="btx.png"
+                                           Width="72"
+                                           Height="58"
+                                           Stretch="UniformToFill"
+                                           SnapsToDevicePixels="True" />
+                                    <Image x:Name="LootbetBannerImage"
+                                           Width="190"
+                                           Height="58"
+                                           Stretch="UniformToFill"
+                                           SnapsToDevicePixels="True" />
+                                </StackPanel>
+                            </Border>
+                        </Grid>
+
+                        <TextBlock Text="Ver.1.1"
+                                   Foreground="#FFFFF371"
+                                   FontFamily="Segoe Script, Brush Script MT, Segoe Print"
+                                   FontSize="14"
+                                   FontStyle="Italic"
+                                   HorizontalAlignment="Center"
+                                   Margin="0,8,0,0" />
+                    </StackPanel>
+                </Grid>
+            </Border>
+        </Border>
+    </Grid>
+</Window>

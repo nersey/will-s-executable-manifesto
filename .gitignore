@@ -1,0 +1,10 @@
+bin/
+obj/
+publish-single/
+*.user
+*.suo
+*.cache
+*.log
+*.zip
+MainWindow.edited.xaml.cs
+will's executable manifesto.exe
