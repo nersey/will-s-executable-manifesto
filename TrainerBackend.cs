@@ -295,11 +295,6 @@ internal sealed class TrainerBackend : IDisposable
             return;
         }
 
-        if (_settings.EnableInfAmmo)
-        {
-            _memory.Write(weaponBase + 0x2A8, BitConverter.GetBytes(999));
-        }
-
         if (_settings.EnableFastFire)
         {
             WriteFloat(weaponBase + 0x2AC, _settings.FireDelay);
@@ -785,11 +780,6 @@ internal sealed class TrainerBackend : IDisposable
                 _settings.EnableFlyMode ? (byte)1 : (byte)0
             ]);
 
-        if (flagsWritten && _settings.EnableInfAmmo)
-        {
-            ApplyInfiniteAmmoToLastWeapon();
-        }
-
         if (flagsWritten && !_settings.EnableFullAuto)
         {
             RestoreFullAutoWeapon();
@@ -823,19 +813,6 @@ internal sealed class TrainerBackend : IDisposable
         _memory.Write(_dataBlock + DataFullAutoOriginalValue, [0]);
     }
 
-    private void ApplyInfiniteAmmoToLastWeapon()
-    {
-        var weaponBase = ReadPointer(_dataBlock + DataLastWeaponBase);
-        if (weaponBase == 0)
-        {
-            return;
-        }
-
-        _memory.Write(weaponBase + 0x2A8, BitConverter.GetBytes(999));
-        _memory.Write(weaponBase + 0x398, BitConverter.GetBytes(999));
-        _memory.Write(weaponBase + 0x3A0, BitConverter.GetBytes(999.0f));
-    }
-
     private byte[] BuildWeaponHook(nint caveAddress, nint returnAddress)
     {
         var code = new X64CodeBuilder(caveAddress);
@@ -849,6 +826,11 @@ internal sealed class TrainerBackend : IDisposable
 
         code.CmpBytePtrR10Disp8(DataEnableFullAuto, 0);
         code.Je("afterFullAuto");
+        code.MovRbxPtrR10Disp8(DataLastControllerBase);
+        code.TestRbxRbx();
+        code.Je("afterFullAuto");
+        code.CmpRbxPtrR15Disp32(0x238);
+        code.Jne("afterFullAuto");
         code.MovRbxPtrR10Disp8(DataFullAutoWeaponBase);
         code.CmpRbxR15();
         code.Je("forceFullAuto");
@@ -889,9 +871,19 @@ internal sealed class TrainerBackend : IDisposable
 
         code.CmpBytePtrR10Disp8(DataEnableInfAmmo, 0);
         code.Je("originalAmmoWrite");
-        code.MovDwordPtrR15Disp32Imm32(0x2A8, 0x000003E7);
-        code.MovDwordPtrR15Disp32Imm32(0x398, 0x000003E7);
-        code.MovDwordPtrR15Disp32Imm32(0x3A0, 0x4479C000);
+        code.MovRbxPtrR10Disp8(DataLastControllerBase);
+        code.TestRbxRbx();
+        code.Je("originalAmmoWrite");
+        code.CmpRbxPtrR15Disp32(0x238);
+        code.Jne("originalAmmoWrite");
+        code.CmpDwordPtrR15Disp32Imm8(0x2A8, 0);
+        code.Jne("afterCurrentAmmoRefill");
+        code.MovDwordPtrR15Disp32Imm32(0x2A8, 1);
+        code.Label("afterCurrentAmmoRefill");
+        code.MovDwordPtrR15Disp32Imm32(0x398, 1);
+        code.MovDwordPtrR15Disp32Imm32(0x3A0, FloatBits(1.0f));
+        code.MovBytePtrR15Disp32Imm8(0x394, 0);
+        code.MovBytePtrR15Disp32Imm8(0x395, 0);
         code.Jmp("afterAmmoWrite");
         code.Label("originalAmmoWrite");
         code.MovPtrR15Disp32Eax(0x2A8);

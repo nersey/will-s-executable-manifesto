@@ -223,6 +223,19 @@ internal sealed class X64CodeBuilder
         Emit(0x4C, 0x39, 0xFB);
     }
 
+    public void CmpRbxPtrR15Disp32(int displacement)
+    {
+        Emit(0x49, 0x3B, 0x9F);
+        EmitInt32(displacement);
+    }
+
+    public void CmpDwordPtrR15Disp32Imm8(int displacement, byte value)
+    {
+        Emit(0x41, 0x83, 0xBF);
+        EmitInt32(displacement);
+        Emit(value);
+    }
+
     public void TestRbxRbx()
     {
         Emit(0x48, 0x85, 0xDB);
